@@ -1,15 +1,12 @@
-dataFrame <- read.csv(
-  file = "../csv/REQUEST-ACTIVITY.csv",
-  stringsAsFactors = TRUE
-)
+library(tidyverse)
 
-
-dataFrame <- as_tibble(dataFrame)
+dataFrame <- read_csv(file = "../csv/REQUEST-ACTIVITY.csv")
 
 dataFrame %>%
-  mutate_all(~ na_if(., "N/A")) -> dataFrame
+  mutate_all(~ na_if(., "N/A")) %>%
+  mutate_all(as.factor) -> dataFrame
 
-# Superceded as
+
 dataFrame %>%
   count(Status, sort = TRUE)
 
