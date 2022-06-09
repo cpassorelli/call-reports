@@ -1,7 +1,5 @@
 IF OBJECT_ID('tempdb..#TSCD') IS NOT NULL DROP TABLE #TSCD
-
 IF OBJECT_ID('tempdb..#TSCD_A') IS NOT NULL DROP TABLE #TSCD_A
-
 CREATE TABLE #TSCD
 (
     PrimaryName nvarchar(50) null,
@@ -14,9 +12,6 @@ CREATE TABLE #TSCD
     PrimaryDateMin datetime null,
     PrimaryDate datetime null
 )
-;
-
--- CP: do we care difference between outbound and inbound calls?
 INSERT INTO
     #TSCD
 SELECT 
@@ -31,23 +26,19 @@ SELECT
     ,MAX(q.primaryDate) AS PrimaryDate
 FROM 
     (
-        -- CP: both focused on employee
         -- outbound calls
         SELECT
             CD.caller_name AS primaryName,
             COUNT(call_id) AS outboundCalls,
-            -- hh:mm:ss; ignore hours
             RIGHT(CONVERT(CHAR(8),DATEADD(second,AVG(duration),0),108),5) AS averageOutboundDuration,
             0 AS inboundCalls,
             RIGHT(CONVERT(CHAR(8),DATEADD(second,0,0),108),5) AS averageInboundDuration,
-            -- CP: why max?
             MAX(CD.date_time_est) primaryDate,
             0 AS NumberOfStatementsReceived,
             0 AS NumberOfStatementEmailsReceived
         FROM
             [dbo].[StatementCallerZoomData] CD
         WHERE
-            -- CP: EXISTS
             UPPER(RTRIM(LTRIM(CD.caller_name))) IN 
             (
                 SELECT 
@@ -55,21 +46,16 @@ FROM
                 FROM 
                     dbo.StatementsActivities 
                 WHERE 
-                    ActivityType <> 'Note Only'
-                    AND ActivityType IS NOT NULL
+                    (ActivityType <> 'Note Only' AND ActivityType IS NOT NULL)
                     AND ActivityDate >= CAST(CAST(GETDATE()-1 AS DATE) AS DATETIME)
                     AND ActivityDate < CAST(CAST(GETDATE() AS DATE) AS DATETIME)
             )
             AND direction = 'outbound'
-            -- CP: call occurred in last 24 hours
-            -- CP: why upper bound?
-            AND date_time_est >= CAST(CAST(GETDATE() - 1 AS DATE) AS DATETIME)
-            AND date_time_est < CAST(CAST(GETDATE() AS DATE) AS DATETIME)
+            AND date_time_est >= CAST(CAST(GETDATE()-1 AS DATE) AS DATETIME)
+            AND date_time_est <  CAST(CAST(GETDATE() AS DATE) AS DATETIME)
         GROUP BY 
             caller_name
-
-        UNION
-
+        UNION 
         -- inbound calls
         SELECT
             CD.callee_name AS primaryName,
@@ -99,10 +85,7 @@ FROM
             AND date_time_est < CAST(CAST(GETDATE() AS DATE) AS DATETIME)
         GROUP BY 
             callee_name
-
         UNION
-
-        -- CP: can have solid and weak matches; duplicates
         -- statement receipts
         SELECT
             ActivityUser AS primaryName,
@@ -111,54 +94,21 @@ FROM
             0 AS inboundCalls,
             RIGHT(CONVERT(CHAR(8),DATEADD(second,0,0),108),5) AS averageInboundDuration,
             MAX(ActivityDate) AS primaryDate,
-            -- CP: number of statements aggregated; not dependent on time
             COALESCE(SUM(S.NumberOfStatementsReceived),0) AS NumberOfStatementsReceived,
             COUNT(S.EmailMessageID) AS NumberOfStatementEmailsReceived
         FROM
             [dbo].[StatementsActivities] S
         WHERE
-            ActivityType <> 'Note Only'
-            AND ActivityType IS NOT NULL
-            -- CP: statements.CreatedDate
-            AND ActivityDate >= CAST(CAST(GETDATE() - 1 AS DATE) AS DATETIME)
+            (ActivityType <> 'Note Only' AND ActivityType IS NOT NULL)
+            AND ActivityDate >= CAST(CAST(GETDATE()-1 AS DATE) AS DATETIME)
             AND ActivityDate < CAST(CAST(GETDATE() AS DATE) AS DATETIME)
         GROUP BY 
             ActivityUser
     ) as q
 GROUP BY 
     primaryName
-
-
-
 -- add hourly columns
-ALTER TABLE #TSCD
-ADD
-    TotalActivities int null,
-    TwelveAM int null,
-    OneAM int null,
-    TwoAM int null,
-    ThreeAM int null,
-    FourAM int null,
-    FiveAM int null,
-    SixAM int null,
-    SevenAM int null,
-    EightAM int null,
-    NineAM int null,
-    TenAM int null,
-    ElevenAM int null,
-    TwelvePM int null,
-    OnePM int null,
-    TwoPM int null,
-    ThreePM int null,
-    FourPM int null,
-    FivePM int null,
-    SixPM int null,
-    SevenPM int null,
-    EightPM int null,
-    NinePM int null,
-    TenPM int null,
-    ElevenPM int null
-
+ALTER TABLE #TSCD ADD TotalActivities int null, TwelveAM int null, OneAM int null, TwoAM int null, ThreeAM int null, FourAM int null, FiveAM int null, SixAM int null, SevenAM int null, EightAM int null, NineAM int null, TenAM int null, ElevenAM int null, TwelvePM int null, OnePM int null, TwoPM int null, ThreePM int null, FourPM int null, FivePM int null, SixPM int null, SevenPM int null, EightPM int null, NinePM int null, TenPM int null, ElevenPM int null
 -- create temp table for activities
 CREATE TABLE #TSCD_A
 (
@@ -169,7 +119,6 @@ CREATE TABLE #TSCD_A
     NumberOfStatementsReceived int null,
     SRARReferenceNumber int null
 )
-
 -- populate temp table for activities
 INSERT INTO 
     #TSCD_A
@@ -183,11 +132,8 @@ SELECT
 FROM 
     [dbo].[StatementsActivities] SA
 WHERE 
-    SA.[CreatedDate] >= CAST(GETDATE() - 1 AS DATE)
+    SA.[CreatedDate] >= CAST(GETDATE()-1 AS DATE)
     AND SA.[CreatedDate] < CAST(GETDATE() AS DATE)
-
-
--- CP: could create table for each phone call record
 -- populate hourly counts
 UPDATE
     #TSCD
@@ -252,16 +198,12 @@ FROM
             #TSCD_A AS T
         GROUP BY
             T.[ActivityUser]
-    ) AS T ON
-            T.[ActivityUser] = TSCD.[PrimaryName]
+    ) AS T ON T.[ActivityUser] = TSCD.[PrimaryName]
 ;
 
 
 -- add total emails column
-ALTER TABLE #TSCD
-    ADD TotalEmailsSent int null
-;
-
+ALTER TABLE #TSCD ADD TotalEmailsSent int null
 -- populate total emails
 UPDATE
     #TSCD
@@ -280,17 +222,12 @@ FROM
             T.[SRARMessageID] IS NOT NULL
         GROUP BY
             T.[ActivityUser]
-    ) AS T ON
-        T.[ActivityUser] = TSCD.[PrimaryName]
+    ) AS T ON T.[ActivityUser] = TSCD.[PrimaryName]
 ;
 
 
 -- add unique refs column
-ALTER TABLE #TSCD
-    ADD UniqueRefs int null
-;
-
-
+ALTER TABLE #TSCD ADD UniqueRefs int null
 -- add unique refs values
 UPDATE
     #TSCD
@@ -311,7 +248,6 @@ FROM
         GROUP BY
             T.[ActivityUser]
     ) AS T ON T.[ActivityUser] = TSCD.[PrimaryName]
-
 -- zero out nulls
 UPDATE
     #TSCD
@@ -321,10 +257,7 @@ SET
     ,#TSCD.[UniqueRefs] = CASE WHEN TSCD.[UniqueRefs] IS NULL THEN 0 ELSE TSCD.[UniqueRefs] END
 FROM
     #TSCD TSCD
-
 -- final query
 SELECT * FROM #TSCD
-
 IF OBJECT_ID('tempdb..#TSCD') IS NOT NULL DROP TABLE #TSCD
-
 IF OBJECT_ID('tempdb..#TSCD_A') IS NOT NULL DROP TABLE #TSCD_A
