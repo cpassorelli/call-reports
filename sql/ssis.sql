@@ -89,8 +89,8 @@ FROM
                 SELECT 
                     DISTINCT UPPER(RTRIM(LTRIM(ActivityUser))) 
                 FROM 
-                    dbo.StatementsActivities 
-                WHERE 
+                    dbo.StatementsActivities
+                WHERE
                     (ActivityType <> 'Note Only' AND ActivityType IS NOT NULL)
                     AND ActivityDate >= CAST(CAST(GETDATE()-1 AS DATE) AS DATETIME)
                     AND ActivityDate < CAST(CAST(GETDATE() AS DATE) AS DATETIME)
@@ -114,12 +114,12 @@ FROM
             -- CP: 
             MAX(ActivityDate) AS primaryDate,
             -- CP: number of statements aggregated; not dependent on time
-            COALESCE(SUM(S.NumberOfStatementsReceived),0) AS NumberOfStatementsReceived,
+            COALESCE(SUM(S.NumberOfStatementsReceived), 0) AS NumberOfStatementsReceived,
             COUNT(S.EmailMessageID) AS NumberOfStatementEmailsReceived
         FROM
             [dbo].[StatementsActivities] S
         WHERE
-            -- CP: `Called Vendor`, `Received Call / Email` -> IS_OUTGOING
+            -- CP: CALL, EMAIL, RESPONSE, NULL
             ActivityType <> 'Note Only'
             AND ActivityType IS NOT NULL
             -- CP: statements.CreatedDate
@@ -177,6 +177,7 @@ CREATE TABLE #TSCD_A
 ;
 
 
+-- CP: all activities? null and 'Note Only'?
 -- populate temp table for activities
 INSERT INTO 
     #TSCD_A
@@ -193,6 +194,7 @@ WHERE
     SA.[CreatedDate] >= CAST(GETDATE() - 1 AS DATE)
     AND SA.[CreatedDate] < CAST(GETDATE() AS DATE)
 ;
+
 
 
 -- CP: could create table for each phone call record
@@ -231,7 +233,7 @@ FROM
     (
         SELECT
             T.[ActivityUser]
-            -- CP: total activities within datetime range
+            -- CP: total activities within datetime range?
             ,COUNT(T.[ObjectID]) AS TotalActivities
             ,CAST(NULLIF(SUM(CASE WHEN T.[CreatedDate] >= DATEADD(HOUR,0,CAST( CAST(GETDATE()-1 AS Date) AS DateTime)) AND T.[CreatedDate] < DATEADD(HOUR,1,CAST( CAST(GETDATE()-1 AS Date) AS DateTime)) THEN 1 ELSE 0 END) ,0) AS VARCHAR) AS TwelveAM
             ,CAST(NULLIF(SUM(CASE WHEN T.[CreatedDate] >= DATEADD(HOUR,1,CAST( CAST(GETDATE()-1 AS Date) AS DateTime)) AND T.[CreatedDate] < DATEADD(HOUR,2,CAST( CAST(GETDATE()-1 AS Date) AS DateTime)) THEN 1 ELSE 0 END) ,0) AS VARCHAR) AS OneAM
@@ -271,6 +273,8 @@ ALTER TABLE #TSCD
     ADD TotalEmailsSent int null
 ;
 
+
+-- CP: count number of emails sent for each user
 -- populate total emails
 UPDATE
     #TSCD
@@ -300,6 +304,7 @@ ALTER TABLE #TSCD
 ;
 
 
+-- CP: count number distinct reference numbers for each employee
 -- add unique refs values
 UPDATE
     #TSCD
@@ -314,7 +319,8 @@ FROM
             ,COUNT(DISTINCT T.[SRARReferenceNumber]) AS 'UniqueRefs'
         FROM 
             #TSCD_A AS T
-        WHERE 
+        WHERE
+            -- CP: RECEIVED_STATEMENTS > 0
             T.[NumberOfStatementsReceived] IS NOT NULL
             AND T.[NumberOfStatementsReceived] <> 0
         GROUP BY
