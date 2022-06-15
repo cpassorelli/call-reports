@@ -223,10 +223,10 @@ FROM
         LEFT JOIN
             buckets ON
                 employees.EMPLOYEE_ID = buckets.EMPLOYEE_ID
-WHERE (
+WHERE
     calls.EMPLOYEE_ID IS NOT NULL
     OR send_emails.EMPLOYEE_ID IS NOT NULL
     OR receive_emails.EMPLOYEE_ID IS NOT NULL
     OR statements.EMPLOYEE_ID IS NOT NULL
-    OR buckets.EMPLOYEE_ID IS NOT NULL)
+    OR buckets.EMPLOYEE_ID IS NOT NULL
     AND EMPLOYEES.EMPLOYEE_ID = 47514957

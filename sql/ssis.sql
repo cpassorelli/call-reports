@@ -119,7 +119,7 @@ FROM
         FROM
             [dbo].[StatementsActivities] S
         WHERE
-            -- CP: CALL, EMAIL, RESPONSE, NULL
+            -- CP: CALL, EMAIL, RESPONSE
             ActivityType <> 'Note Only'
             AND ActivityType IS NOT NULL
             -- CP: statements.CreatedDate
