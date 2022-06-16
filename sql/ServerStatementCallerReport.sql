@@ -4,11 +4,11 @@ _calls AS (
         EMPLOYEE_ID,
         CALL_DATE,
         CASE IS_OUTGOING
-            WHEN 1
+            WHEN 0
                 THEN CALL_DURATION
         END as INBOUND_DURATION,
         CASE IS_OUTGOING
-            WHEN 0
+            WHEN 1
                 THEN CALL_DURATION
         END as OUTBOUND_DURATION
     FROM

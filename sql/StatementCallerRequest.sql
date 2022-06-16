@@ -73,12 +73,25 @@ SELECT
     ,LTRIM(RTRIM(SRAR.[ActivityUser])) AS 'Last Note By'
     ,CAST((SRAR.[ActivityDate]) AS date) AS 'Last Note Date'
     ,SRAR.[Notes]  AS 'Last Note'
-FROM 
+FROM
+    -- CP: requests main table
     [OnBase].[hsi].[rm_DVStatementRequests] SR WITH (NOLOCK)
-    INNER JOIN [OnBase].[hsi].[workitemlc] O WITH (NOLOCK) ON O.[contentnum] = SR.[ObjectID] -- state
-    INNER JOIN [OnBase].[hsi].[rmobject] R WITH (NOLOCK) ON R.[objectid] = O.[contentnum]
-    INNER JOIN [OnBase].[hsi].[rm_DVJobs] J WITH (NOLOCK) ON J.[JobNo] = SR.[JobNo]
-    INNER JOIN [OnBase].[hsi].[lcstate] Q WITH (NOLOCK) ON Q.[statenum] = O.[statenum] -- queue name
+    INNER JOIN
+        [OnBase].[hsi].[workitemlc] O WITH (NOLOCK) ON
+            O.[contentnum] = SR.[ObjectID] -- state
+    INNER JOIN
+        [OnBase].[hsi].[rmobject] R WITH (NOLOCK) ON
+            -- join on content number
+            R.[objectid] = O.[contentnum]
+    INNER JOIN
+        -- CP: connect to job or use employees table?
+        [OnBase].[hsi].[rm_DVJobs] J WITH (NOLOCK)
+            ON J.[JobNo] = SR.[JobNo]
+    INNER JOIN
+        [OnBase].[hsi].[lcstate] Q WITH (NOLOCK) ON
+            -- CP: join on statement number
+            Q.[statenum] = O.[statenum] -- queue name
+    -- CP: most recent activity where note available; same reference number
     OUTER APPLY 
         (
         SELECT TOP 1 SRAR_S.[ActivityDate], SRAR_S.[ActivityUser], SRAR_S.[Notes]
@@ -88,7 +101,8 @@ FROM
         AND SRAR_S.[Notes] <> 'Note added to create Statement Request in Project Tracker.'
         AND SRAR_S.[Notes] NOT LIKE '%The Statement Preferred Vendor Contact in OnBase for this Vendor had its contact information updated%'
         ORDER BY SRAR_S.[ActivityDate] DESC, SRAR_S.[CreatedDate] DESC
-        ) SRAR 
+        ) SRAR
+    -- CP: most recent statement; order by CreatedDate?
     OUTER APPLY 
         (
         SELECT TOP 1 S2.[Statement Date]
@@ -96,7 +110,7 @@ FROM
         WHERE S2.[Reference Number] = SR.[ReferenceNumber] 
         ORDER BY S2.[ObjectID] + RAND(4) DESC
         ) S 
-
+    -- CP: search for datetime
     -- superfluous: StatementRequestActivityRecord, ActivityDate? parse out date in note; NoteID in BSAP
     OUTER APPLY 
         (
@@ -106,6 +120,7 @@ FROM
         AND SN.[STNDescription] LIKE '%re-released%'
         ORDER BY SN.[STNAdded] DESC, SN.[STNID] + RAND(4) DESC
         ) SN_RE
+    -- CP: join projects on jobs using job number; type is 'Statements'
     OUTER APPLY
         (
         SELECT TOP 1 RTRIM(P.[Status]) AS 'Status'
