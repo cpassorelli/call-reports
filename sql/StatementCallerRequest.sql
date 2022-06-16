@@ -85,6 +85,8 @@ FROM
             R.[objectid] = O.[contentnum]
     INNER JOIN
         -- CP: connect to job or use employees table?
+        -- CP: attach jobs to employees table?
+        -- CP: attach jobs to requests table?
         [OnBase].[hsi].[rm_DVJobs] J WITH (NOLOCK)
             ON J.[JobNo] = SR.[JobNo]
     INNER JOIN
@@ -116,11 +118,12 @@ FROM
         (
         SELECT TOP 1 SN.[STNAdded] 
         FROM [BSIHC-GVL-SQL01].[BSI].[dbo].[SNotes] SN WITH (NOLOCK)
-        WHERE SN.[STID] = SR.[ReferenceNumber] 
+        WHERE SN.[STID] = SR.[ReferenceNumber]
         AND SN.[STNDescription] LIKE '%re-released%'
         ORDER BY SN.[STNAdded] DESC, SN.[STNID] + RAND(4) DESC
         ) SN_RE
     -- CP: join projects on jobs using job number; type is 'Statements'
+    -- CP: no order by
     OUTER APPLY
         (
         SELECT TOP 1 RTRIM(P.[Status]) AS 'Status'
@@ -128,11 +131,13 @@ FROM
         WHERE P.[JobNo] = J.[JobNo]
         AND P.[ProjectType] = 'Statements'
         ) P
-WHERE 
+WHERE
+    -- CP: Statement Request Processing
     O.[lcnum] = 160 -- Statement Request Processing LC
     AND P.[Status] <> 'Closed' -- open projects only
     AND R.[activestatus] = 0 -- Active object status
     -- POD variable: rm_DVPods
+    -- CP: attach color
     AND LTRIM(RTRIM(J.[ManagerPodName])) = 
         (
         CASE 
@@ -149,6 +154,7 @@ WHERE
         ELSE LTRIM(RTRIM(SR.[CallerStatus])) 
         END
         )
+    -- CP: keep status or map to codes
     AND SR.[Status] <> 'Fully Received'
     AND SR.[Status] <> 'Partial Receipt'
     AND O.statenum <> 441 -- Initial Q
