@@ -64,11 +64,13 @@ SELECT
         AND C.[CLVendorCode] = LTRIM(RTRIM(SR.[VendorNo]))
         AND C.[JID] = SR.[JobNo]
         ),0) AS 'Approved Vendor Claim Volume'
+    -- CP: why make call to activities again
     ,(
         SELECT COUNT(SRAR.[ObjectID]) 
         FROM [OnBase].[hsi].[rm_DVStatementRequestActivityRecords] SRAR WITH (NOLOCK)
         WHERE SRAR.[ReferenceNumber] = SR.[ReferenceNumber]
         ) 'Activity Count'
+    -- CP: want latest activity date, user and notes based on reference number
     ,CAST((GETDATE() - (SRAR.[ActivityDate])) AS int) AS 'Days Since Last Activity'
     ,LTRIM(RTRIM(SRAR.[ActivityUser])) AS 'Last Note By'
     ,CAST((SRAR.[ActivityDate]) AS date) AS 'Last Note Date'
@@ -94,6 +96,7 @@ FROM
             -- CP: join on statement number
             Q.[statenum] = O.[statenum] -- queue name
     -- CP: most recent activity where note available; same reference number
+    -- CP: why 
     OUTER APPLY 
         (
         SELECT TOP 1 SRAR_S.[ActivityDate], SRAR_S.[ActivityUser], SRAR_S.[Notes]
