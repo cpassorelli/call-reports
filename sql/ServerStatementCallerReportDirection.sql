@@ -58,6 +58,7 @@ receive_emails AS (
             INNER JOIN
                 STATEMENT_EMAILS_RECEIVED ON
                     STATEMENT_ACTIVITIES.REFERENCE_ID = STATEMENT_EMAILS_RECEIVED.REFERENCE_ID
+                    AND cast(EMAIL_DATE as date) = cast(ACTIVITY_DATE as date)
                     AND EMPLOYEE_REFERENCE_RANK = 1
                     AND EMAIL_DATE BETWEEN
                         CAST(GETDATE() - 1 AS DATE)
@@ -202,8 +203,4 @@ WHERE
     )
 ORDER BY
     employees.EMPLOYEE_NAME
-
-
-
-
-
+;

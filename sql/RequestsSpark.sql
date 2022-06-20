@@ -29,11 +29,28 @@ activities AS (
         NOTE_REFERENCE_RANK IS NOT NULL
 )
 SELECT
-    states.STATE_NAME,
-    jobs.TEAM,
+    states.STATE_NAME, -- queue
+    requests.REFERENCE_NUMBER,
+    jobs.TEAM, -- pod
+    jobs.JOB_NUMBER,
+    requests.CUSTOMER_NAME,
     managers.EMPLOYEE_NAME as MANAGER_NAME,
     supervisors.EMPLOYEE_NAME as SUPERVISOR_NAME,
-    requests.*,
+    requests.VENDOR_NUMBER,
+    requests.VENDOR_GROUP_NAME,
+    requests.VOLUME_LEVEL, -- scope
+    requests.VOLUME,
+    requests.VOLUME_PREVIOUS_YEAR,
+    requests.CALL_SHEET_NUMBER,
+    employees.EMPLOYEE_NAME, -- current assignee
+    requests.REQUEST_STATUS, -- recon status
+    requests.CALL_STATUS,
+    requests.REQUEST_METHOD,
+    requests.REQUEST_TYPE,
+    CASE requests.STATEMENT_WILL_NOT_COMPLY
+        WHEN true THEN 'Y'
+    END as VENDOR_WILL_NOT_COMPLY
+    /*requests.*,
     statements.STATEMENT_DATE,
     activities.ACTIVITY_DAYS,
     activities.ACTIVITY_DATE,
@@ -41,7 +58,8 @@ SELECT
     activities.ACTIVITY_COUNT,
     employees.EMPLOYEE_NAME,
     coalesce(claims.VENDOR_CLAIMS, 0) as VENDOR_CLAIMS,
-    coalesce(claims.VENDOR_CLAIMS_AMOUNT, 0) as VENDOR_CLAIMS_AMOUNT
+    coalesce(claims.VENDOR_CLAIMS_AMOUNT, 0) as VENDOR_CLAIMS_AMOUNT,
+    descriptions.DESCRIPTION_DATE as RELEASE_DATE*/
 FROM
     requests
         INNER JOIN
@@ -80,3 +98,17 @@ FROM
         LEFT JOIN
             claims ON
                 requests.JOB_ID = claims.JOB_ID
+        LEFT JOIN
+            descriptions ON
+                requests.REFERENCE_ID = descriptions.REFERENCE_ID
+                AND descriptions.RELEASE_RANK = 1
+WHERE
+    NOT EXISTS (
+        SELECT 1
+        FROM
+            projects
+        WHERE
+            requests.JOB_ID = projects.JOB_ID
+            AND projects.STATUS = 'Closed'
+    )
+;

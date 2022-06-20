@@ -95,6 +95,7 @@ receive_emails AS (
                 STATEMENT_EMAILS_RECEIVED ON
                     STATEMENT_ACTIVITIES.REFERENCE_ID = STATEMENT_EMAILS_RECEIVED.REFERENCE_ID
                     AND EMPLOYEE_REFERENCE_RANK = 1
+                    AND cast(EMAIL_DATE as date) = cast(ACTIVITY_DATE as date)
                     AND EMAIL_DATE BETWEEN
                         cast((current_timestamp() - interval '1 day') as date)
                         AND cast(current_timestamp() as date)
