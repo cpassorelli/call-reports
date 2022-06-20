@@ -58,7 +58,7 @@ SELECT
         AND C.[CLVendorCode] = LTRIM(RTRIM(SR.[VendorNo]))
         AND C.[JID] = SR.[JobNo]
         ) AS 'Approved Vendor Claim Count'
-    ,COALESCE((SELECT SUM(C.[CLAmount]) 
+    ,COALESCE((SELECT SUM(C.[CLAmount])
         FROM [BSIHC-GVL-SQL01].[BSI].[dbo].[Claims] C WITH (NOLOCK)
         WHERE C.[CLStatus] = 2 -- Approved
         AND C.[CLVendorCode] = LTRIM(RTRIM(SR.[VendorNo]))
@@ -69,12 +69,12 @@ SELECT
         SELECT COUNT(SRAR.[ObjectID]) 
         FROM [OnBase].[hsi].[rm_DVStatementRequestActivityRecords] SRAR WITH (NOLOCK)
         WHERE SRAR.[ReferenceNumber] = SR.[ReferenceNumber]
-        ) 'Activity Count'
+        ) as 'Activity Count'
     -- CP: want latest activity date, user and notes based on reference number
     ,CAST((GETDATE() - (SRAR.[ActivityDate])) AS int) AS 'Days Since Last Activity'
     ,LTRIM(RTRIM(SRAR.[ActivityUser])) AS 'Last Note By'
     ,CAST((SRAR.[ActivityDate]) AS date) AS 'Last Note Date'
-    ,SRAR.[Notes]  AS 'Last Note'
+    ,SRAR.[Notes] AS 'Last Note'
 FROM
     -- CP: requests main table
     [OnBase].[hsi].[rm_DVStatementRequests] SR WITH (NOLOCK)
