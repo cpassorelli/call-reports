@@ -1,5 +1,5 @@
 WITH
-claims AS (
+_claims AS (
     SELECT
         JOB_ID,
         count(CLAIM_ID) as VENDOR_CLAIMS,
@@ -11,12 +11,12 @@ claims AS (
     GROUP BY
         JOB_ID
 ),
-activities AS (
+_activities AS (
     SELECT
         REFERENCE_ID,
         employees.EMPLOYEE_NAME as ACTIVITY_USER,
         NOTE_REFERENCE_RANK,
-        datediff(current_date(), activities.ACTIVITY_DATE) as ACTIVITY_DAYS,
+        datediff(day, activities.ACTIVITY_DATE, GETDATE()) as ACTIVITY_DAYS,
         cast(activities.ACTIVITY_DATE as date) as ACTIVITY_DATE,
         activities.NOTES,
         count(ACTIVITY_ID) OVER (
@@ -51,16 +51,16 @@ SELECT
     requests.REQUEST_METHOD,
     requests.REQUEST_TYPE,
     CASE requests.STATEMENT_WILL_NOT_COMPLY
-        WHEN true THEN 'Y'
+        WHEN 1 THEN 'Y'
     END as VENDOR_WILL_NOT_COMPLY,
     CASE requests.HAS_SPECIAL_HANDLING
-        WHEN true THEN 'Y'
+        WHEN 1 THEN 'Y'
     END as HAS_SPECIAL_HANDLING,
     CASE requests.NEEDS_LEAD_VENDOR
-        WHEN true THEN 'Y'
+        WHEN 1 THEN 'Y'
     END as NEEDS_LEAD_VENDOR,
     CASE requests.VENDOR_HAS_WEBSITE
-        WHEN true THEN 'Y'
+        WHEN 1 THEN 'Y'
     END as VENDOR_HAS_WEBSITE,
     requests.REQUEST_DATE,
     requests.LAST_ACTIVITY_DATE,
@@ -102,14 +102,14 @@ FROM
                 requests.REFERENCE_ID = statements.REFERENCE_ID
                 AND statements.REFERENCE_RANK = 1
         LEFT JOIN
-            activities ON
+            _activities as activities ON
                 requests.REFERENCE_ID = activities.REFERENCE_ID
                 AND activities.NOTE_REFERENCE_RANK = 1
         LEFT JOIN
             employees ON
                 requests.EMPLOYEE_ID = employees.EMPLOYEE_ID
         LEFT JOIN
-            claims ON
+            _claims as claims ON
                 requests.JOB_ID = claims.JOB_ID
         LEFT JOIN
             descriptions ON
@@ -122,9 +122,8 @@ WHERE
             projects
         WHERE
             requests.JOB_ID = projects.JOB_ID
-            AND projects.STATUS != 'Closed'
+            AND projects.STATUS <> 'Closed'
     )
 ORDER BY
     states.STATE_NAME,
     jobs.JOB_NUMBER
-;
