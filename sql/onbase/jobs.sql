@@ -1,0 +1,33 @@
+SELECT
+    JobNo,
+    ManagerID,
+    SupervisorID,
+    -- SummaryInstructions,
+    -- AuditPeriodBase,
+    -- PTID,
+    -- PortalInvoiceEntryGoal,
+    -- PortalCreditEntryGoal,
+    -- PortalDaysToPayGoal,
+    -- EmailAccess,
+    -- Active,
+    -- ImagingAccess,
+    ManagerPodName
+    -- Name,
+    -- DisplayAuditPeriod,
+    -- VisibleInPortal,
+    -- CustomerID,
+    -- Application,
+    -- CID,
+    -- Rolling,
+    -- [Customer Customer SILO Group Group Code] as CustomerGroupCode,
+    -- PortalFriendlyName,
+    -- PortalClaimsReadOnly,
+    -- CustomerGroupID,
+    -- ManagerPodID,
+    -- SortOrder,
+    -- StatementCallsheetAssignee,
+    -- [Customer Customer SILO Group Name] as CustomerGroupName,
+    -- [Service Line] as ServiceLine,
+    -- [Service Type] as ServiceType
+FROM
+    hsi.rm_DVJobs
